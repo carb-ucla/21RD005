@@ -8,12 +8,12 @@ library(haven)
 ## Files
 
 
-file.asthma.2015 <- 'C:/Users/VArputhasamy/Documents/HCAI_ED/Unsuppressed_Output/With_Zeros/ED2015_Asthma_AgeSex_US_fortracking.csv'
+file.asthma.2015 <- 'path/to/your/file.csv'
 ## this file is processed slightly differently
 ## processed in the same way the 2015 file was processed for tracking
 ## it was generated without loading in 2016 or 2017 at all
 
-#file.asthma.2016 <- "../hcai.data.files/ED2016_Asthma_AgeSex_Suppressed_notclean.csv"
+#file.asthma.2016 <- "path/to/your/file.csv"
 
 file.pop.2015 <- "../pop.files/ACSST5Y2015.S0101-Data.csv"
 #file.pop.2016 <- "../pop.files/ACSST5Y2016.S0101-Data.csv"
@@ -103,7 +103,7 @@ rr.2015.hpi <- make_rr(dat.smr.2015,zip.shp)
 save(rr.2015.hpi,file="rr.2015_compare_hpi.obj")
 rr.2015.hpi.shp <- rr.2015.hpi$my.shp.out
 st_write(rr.2015.hpi.shp, 
-         "C:/Users/VArputhasamy/Documents/RR_SMR_V2_0411/RR_SMR/outfiles/rr.2015.hpi.shp")
+         "path/to/your/file.shp")
 rr.2015.hpi.mod <- rr.2015.hpi$mod.inla.pois
 print(summary(rr.2015.hpi.mod))
 
