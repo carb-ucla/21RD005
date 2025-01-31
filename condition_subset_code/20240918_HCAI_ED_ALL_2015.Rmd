@@ -19,7 +19,7 @@ library(tidyverse)
 
 #Diagnostic Codes: https://data.chhs.ca.gov/dataset/hospital-emergency-department-diagnosis-procedure-and-external-cause-codes
 
-# September 18th, 2024: This code was developed to prepare the HCAI ED data for total risk analysis. We will stratify by age (0-19; 20 - 44; 45 - 64; 65+) and sex (M, F) and  sum total ED visits that were All-Cause Respiratory, Cardio, Cerebro, or Diabetes related by zip. ED visits in the ED file are treat and release only and do not include the ED visits that get hospitalized. In order to include the ED to hospitalized patients, we will need to extract PDD patients using the "srcroute_ns" variable which we don't have. Therefore, this version of the code DOES NOT include PDD records. We also do not have all variables to clean the data 
+# September 18th, 2024: This code was developed to prepare the HCAI ED data for total risk analysis. We will stratify by age (0-19; 20 - 44; 45 - 64; 65+) and sex (M, F) and  sum total ED visits that were All-Cause Respiratory, Cardio, Cerebro, or Diabetes related by zip. ED visits in the ED file are treat and release only and do not include the ED visits that get hospitalized.  
 ```
 
 ## Data Prep 
