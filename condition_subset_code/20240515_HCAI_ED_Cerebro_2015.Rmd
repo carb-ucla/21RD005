@@ -35,7 +35,7 @@ The goal of this code is to identify all primary Asthma ED visits diagnosis from
 
 # 2015_ED
 
-ED2015ALL <- read.csv("E:/Data/Eisenman_HeatMap/Data Received July 2021/EDD/dm_ED2015.csv", 
+ED2015ALL <- read.csv("path/to/your/file.csv", 
                       stringsAsFactors=FALSE, header=T) 
 
 
@@ -114,6 +114,6 @@ ED2015_Cerebro_AgeSex_US_tracking <- comb_ED2015_Cerebro
 
 # Save as CSV files
 
-write.csv(ED2015_Cerebro_AgeSex_US_tracking, file = 'C:/Users/VArputhasamy/Documents/HCAI_ED/Unsuppressed_Output/With_Zeros/Tracking_Data/ED2015_Cerebro_AgeSex_US_fortracking.csv')
+write.csv(ED2015_Cerebro_AgeSex_US_tracking, file = 'path/to/your/file.csv')
 ```
 
