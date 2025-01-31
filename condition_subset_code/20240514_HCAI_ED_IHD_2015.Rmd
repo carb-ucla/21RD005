@@ -22,7 +22,7 @@ library(tidyverse)
 
 #Diagnostic Codes: https://data.chhs.ca.gov/dataset/hospital-emergency-department-diagnosis-procedure-and-external-cause-codes
 
-# November 8, 2023: This code was developed to prepare the HCAI ED Ischemic heart disease data for analysis. We will stratify by age (0-19; 20 - 44; 45 - 64; 65+) and sex (M, F) and merge 2016 with 2017 to sum total Ischemic heart disease ED visits by zip. ED visits in the ED file are treat and release only and do not include the ED visits that get hospitalized. In order to include the ED to hospitalized patients, we will need to extract PDD patients using the "srcroute_ns" variable which we don't have. Therefore, this version of the code DOES NOT include PDD records. We also do not have all variables to clean the data 
+# November 8, 2023: This code was developed to prepare the HCAI ED Ischemic heart disease data for analysis. We will stratify by age (0-19; 20 - 44; 45 - 64; 65+) and sex (M, F) and merge 2016 with 2017 to sum total Ischemic heart disease ED visits by zip. ED visits in the ED file are treat and release only and do not include the ED visits that get hospitalized.  
 ```
 
 ## Data Prep 
