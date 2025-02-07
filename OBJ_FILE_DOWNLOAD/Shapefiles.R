@@ -1,13 +1,13 @@
 install.packages("osfr")  # Install osfr
 library(osfr)  # Load the package
 
-# OBJ files can be found here: https://osf.io/8za4n/
+# OBJ files can be found here: https://osf.io/qfxhs/
   
   
-CalHealthMap_ASTHMA <- osf_retrieve_node("8za4n")  
+CalHealthMap <- osf_retrieve_node("qfxhs")  
 
 # List all files in the project
-files <- osf_ls_files(CalHealthMap_ASTHMA)
+files <- osf_ls_files(CalHealthMap)
 print(files)
 
 # Download all files in the project to your own directory
