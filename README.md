@@ -1,2 +1,2 @@
-# rr-smr-materials
-Code and relevant materials for the RR/SMR calculations included in the dashboard created for CARB.
+# 21RD005
+Code, shapefiles, and relevant materials for the CARB 21RD005 project.
