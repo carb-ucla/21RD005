@@ -1,0 +1,227 @@
+---
+title: "20240918_HCAI_ED_Total_Risk_2015"
+author: "Valentina Arputhasamy"
+date: "2024-09-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(writexl)
+library(readxl)
+library(knitr)
+library(plyr)
+library(reshape2)
+library(ggplot2)
+library(openair)
+library(tidyverse)
+
+#Diagnostic Codes: https://data.chhs.ca.gov/dataset/hospital-emergency-department-diagnosis-procedure-and-external-cause-codes
+
+# September 18th, 2024: This code was developed to prepare the HCAI ED data for total risk analysis. We will stratify by age (0-19; 20 - 44; 45 - 64; 65+) and sex (M, F) and  sum total ED visits that were All-Cause Respiratory, Cardio, Cerebro, or Diabetes related by zip. ED visits in the ED file are treat and release only and do not include the ED visits that get hospitalized.  
+```
+
+## Data Prep 
+
+The goal of this code is to create a column titled `tcases` that is binary. `tcases` equals 1 if the ED visit diagnosis was Cerebro, Cardio, Diabetes or All-Cause Respiratory related.
+
+```{r setup, include=FALSE}
+
+## Load Data and Subset to Health Outcome of Interest ##
+
+# 2015_ED
+
+ED2015ALL <- read.csv("path/to/your/file.csv", 
+                      stringsAsFactors=FALSE, header=T) 
+
+
+ED2015ALL$date <- as.POSIXct(strptime(ED2015ALL$serv_dt, 
+                                      format = "%m/%d/%Y", tz = "GMT"))  
+
+# Split the years since ICD9 was used prior to 10/1/15 and ICD10 on and after 
+# 10/1/15
+
+patterns_1 <- paste(paste("^", sep = "", seq(410, 490, by = 1), collapse = '|'),
+              
+              # Cardio Codes
+              
+      "^493", 
+              # Asthma Code
+      
+      paste("^", sep = "", seq(490, 496, by = 1), collapse = '|'),
+              
+              # COPD Codes,
+      
+      paste(paste("^", sep = "", c(250, seq(390, 459, by = 1))),
+                    collapse = '|'),
+      
+              # DCS + Diabetes Codes
+      
+      "^250",
+              # Diabetes Code
+      
+      paste(paste("^", sep = "", seq(410, 414, by = 1)),
+                    collapse = '|'),
+      
+              # IHD Codes
+      
+      paste("^", sep = "", seq(460, 519, by = 1), collapse = '|'),
+      
+              # ACR Codes
+      
+      paste("^", sep = "", seq(430, 438, by = 1), collapse = '|'),
+      
+              # Cerebro Codes
+      
+      paste("^", sep = "", seq(420, 429, by = 1),
+                    collapse = '|'),
+      
+              # Dysrhythmias + HF Codes
+      
+      sep = "|")
+
+# patterns_1 contains all Cerebro, Cardio, All-Cause Respiratory and Diabetes codes from ICD-9
+
+ED2015_1 <- selectByDate(ED2015ALL, month = c(1:9))
+
+# create ED2015_1 that only contains data from January to September
+
+ED2015_1$tcases <- ifelse(grepl(patterns_1, ED2015_1$dx_prin), 1, 0)
+
+# Create the 'tcases' column based on matching patterns in 'dx_prin'
+
+patterns_2 <- paste(paste(c(paste("^I", sep = "", seq(20, 25, by = 1)), 
+                      paste("^I", sep = "", seq(30, 51, by = 1)), 
+                      paste("^I", sep = "", seq(60, 70))), collapse = '|'), 
+                
+                # Cardio Codes
+                
+              "^J45",
+              
+                # Asthma Code
+              
+              paste("^J", sep = "", seq(19, 46, by = 1), collapse = '|'),
+              
+                # COPD Codes
+              
+              paste(c(paste("^I0", sep = "", seq(0, 9, by = 1)), 
+                      paste("^I", sep = "", seq(10, 99, by = 1)), 
+                      paste("^E", sep = "", seq(10, 14, by = 1))), 
+                    collapse = '|' ),
+              
+                # DCS + Diabetes Codes
+              
+              paste("^E", sep = "", seq(10, 14, by = 1), 
+                        collapse = '|'),
+              
+                # Diabetes Codes
+              
+              paste("^I", sep = "", seq(20, 25, by = 1), collapse = '|'),
+              
+                # IHD Codes
+              
+              paste(c(paste("^J0", sep = "", seq(0, 9, by = 1)), 
+                      paste("^J", sep = "", seq(10, 98, by = 1))), 
+                    collapse = '|' ),
+              
+                # ACR Codes
+              
+              paste("^I", sep = "", seq(60, 69), collapse = '|'),
+              
+                # Cerebro Codes
+              
+              paste("^I", sep = "", seq(30, 51), collapse = '|'),
+              
+                # Dyrhythmias + HF Codes
+
+                sep = "|")
+
+
+# patterns_2 contains all Cerebro, Cardio, All-Cause Respiratory and Diabetes codes from ICD-10
+
+ED2015_2 <- selectByDate(ED2015ALL, month = c(10:12))
+
+# create ED2015_2 that only contains data from October to December
+
+ED2015_2$tcases <- ifelse(grepl(patterns_2, ED2015_2$dx_prin), 1, 0)
+
+# Create the 'tcases' column based on matching patterns in 'dx_prin'
+
+ED2015ALL <- rbind(ED2015_1, ED2015_2) 
+
+# overwite ED2015ALL so it contains the tcases column
+
+ED2015ALL$Year <- 2015
+
+# create year column
+
+ED2015ALL <- ED2015ALL %>% filter(patzip >= 90000)
+
+# filter to only keep zips larger than 90000
+
+```
+
+
+Do some recoding to create age/sex categories.
+
+```{r}
+# Recode Age Groups
+
+ED2015ALL$agyrserv <- as.numeric(ED2015ALL$agyrserv, 
+                                     ED2015ALL$patzip)
+
+ED2015ALL$age <- ifelse(ED2015ALL$agyrserv < 20, '00_19',
+                            ifelse(ED2015ALL$agyrserv >= 20 & 
+                                     ED2015ALL$agyrserv < 45, '20_44',
+                            ifelse(ED2015ALL$agyrserv >= 45 & 
+                                     ED2015ALL$agyrserv < 65, '45_64',
+                            ifelse(ED2015ALL$agyrserv >= 65, '65+',
+                            'UK'))))
+# create age categories
+
+mED2015_ALL <- setNames(aggregate(ED2015ALL$tcases, 
+                                     list(ED2015ALL$Year, 
+                                          ED2015ALL$patzip, 
+                                          ED2015ALL$age, 
+                                          ED2015ALL$sex), 
+                                     FUN=sum), 
+                           c('year', 'zip', 'age', 'sex', 'tcases' ))
+
+# aggregate tcases overall all possible combinations of year, zip, age, and sex
+
+length(unique(mED2015_ALL$zip)) * 4 * 2 * 3
+
+unique_zip <- unique(mED2015_ALL$zip)
+unique_age <- unique(mED2015_ALL$age)
+unique_sex <- unique(mED2015_ALL$sex)
+unique_yr <- unique(mED2015_ALL$year)
+comb_zas15 <- expand.grid(year = unique_yr, zip = unique_zip, age = unique_age,
+                          sex = unique_sex)
+comb_zas15 <- subset(comb_zas15, sex != 'U')
+comb_ED2015ALL <- merge(comb_zas15, mED2015_ALL,
+                            by = c("year", "zip", "age", "sex"), all = TRUE)
+comb_ED2015ALL[is.na(comb_ED2015ALL)] <- 0
+comb_ED2015ALL$outcome <- "ED_ALL"
+summary(comb_ED2015ALL$tcases)
+
+ED2015_ALL_AgeSex_US_tracking <- comb_ED2015ALL
+
+# add zeros to tcases for missing age/sex/zip combos
+
+# Save as CSV file
+
+write.csv(ED2015_ALL_AgeSex_US_tracking, file = 'path/to/your/file.csv')
+```
+
+
+
+
+
+
+
+
+
+
+
+

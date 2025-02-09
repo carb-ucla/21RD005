@@ -1,0 +1,121 @@
+---
+title: "20240514_HCAI_ED_IHD_2015"
+author: "Valentina Arputhasamy"
+date: '2024-05-15'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("knitr")
+#install.packages("writexl")
+#install.packages("openair")
+
+library(writexl)
+library(readxl)
+library(knitr)
+library(plyr)
+library(reshape2)
+library(ggplot2)
+library(openair)
+library(tidyverse)
+
+#Diagnostic Codes: https://data.chhs.ca.gov/dataset/hospital-emergency-department-diagnosis-procedure-and-external-cause-codes
+
+# November 8, 2023: This code was developed to prepare the HCAI ED Ischemic heart disease data for analysis. We will stratify by age (0-19; 20 - 44; 45 - 64; 65+) and sex (M, F) and merge 2016 with 2017 to sum total Ischemic heart disease ED visits by zip. ED visits in the ED file are treat and release only and do not include the ED visits that get hospitalized.  
+```
+
+## Data Prep 
+
+The goal of this code is to identify all primary Asthma ED visits diagnosis from 2015 - 2017 HCAI ED data. We load in the 2015 and subset the to only include Asthma diagnoses. We then reformat the data. 
+
+```{r setup, include=FALSE}
+
+## Load Data and Subset to Health Outcome of Interest ##
+
+# 2015_ED
+
+ED2015ALL <- read.csv("path/to/your/file.csv", 
+                      stringsAsFactors=FALSE, header=T) 
+
+
+ED2015ALL$date <- as.POSIXct(strptime(ED2015ALL$serv_dt, 
+                                      format = "%m/%d/%Y", tz = "GMT"))  
+
+# Split the years since ICD9 was used prior to 10/1/15 and ICD10 on and after 
+# 10/1/15
+
+patterns_1 <- paste(paste("^", sep = "", seq(410, 414, by = 1)),
+                    collapse = '|')
+
+ED2015_1 <- subset((selectByDate(ED2015ALL, 
+                                 month = c(1:9))), grepl(patterns_1, dx_prin))
+
+patterns_2 <- paste("^I", sep = "", seq(20, 25, by = 1), collapse = '|')
+  
+ED2015_2 <- subset((selectByDate(ED2015ALL, month = c(10:12))), 
+                   grepl(patterns_2, dx_prin))
+
+ED2015_IHD <- rbind(ED2015_1, ED2015_2)
+ED2015_IHD$Year <- 2015
+
+
+ED2015_IHD <- ED2015_IHD %>% filter(patzip >= 90000)
+
+```
+
+Do some recoding. 
+
+```{r setup, include=FALSE}
+
+# Recode Age Groups
+
+ED2015_IHD$agyrserv <- as.numeric(ED2015_IHD$agyrserv, 
+                                     ED2015_IHD$patzip)
+
+ED2015_IHDa$age <- ifelse(ED2015_IHD$agyrserv < 20, '00_19',
+                            ifelse(ED2015_IHD$agyrserv >= 20 & 
+                                     ED2015_IHD$agyrserv < 45, '20_44',
+                            ifelse(ED2015_IHD$agyrserv >= 45 & 
+                                     ED2015_IHD$agyrserv < 65, '45_64',
+                            ifelse(ED2015_IHD$agyrserv >= 65, '65+',
+                            'UK'))))
+
+ED2015_IHD$tcases <- 1
+
+ED2015_IHD <- subset(ED2015_IHD, patzip >= 90000)
+
+mED2015_IHD <- setNames(aggregate(ED2015_IHD$tcases, 
+                                     list(ED2015_IHD$Year, 
+                                          ED2015_IHD$patzip, 
+                                          ED2015_IHD$age, 
+                                          ED2015_IHD$sex), 
+                                     FUN=sum), 
+                           c('year', 'zip', 'age', 'sex', 'tcases' ))
+
+## get unsuppressed version of data for tracking
+
+
+length(unique(mED2015_IHD$zip)) * 4 * 2 * 3
+
+unique_zip <- unique(mED2015_IHD$zip)
+unique_age <- unique(mED2015_IHD$age)
+unique_sex <- unique(mED2015_IHD$sex)
+unique_yr <- unique(mED2015_IHD$year)
+comb_zas15 <- expand.grid(year = unique_yr, zip = unique_zip, age = unique_age,
+                          sex = unique_sex)
+comb_zas15 <- subset(comb_zas15, sex != 'U')
+comb_ED2015_IHD <- merge(comb_zas15, mED2015_IHD,
+                            by = c("year", "zip", "age", "sex"), all = TRUE)
+comb_ED2015_IHD[is.na(comb_ED2015_IHD)] <- 0
+comb_ED2015_IHD$outcome <- "ED_IHD"
+summary(comb_ED2015_IHD$tcases)
+
+ED2015_IHD_AgeSex_US_tracking <- comb_ED2015_IHD
+
+
+# Save as CSV files
+
+write.csv(ED2015_IHD_AgeSex_US_tracking, file = 'path/to/your/file.csv')
+```
+
